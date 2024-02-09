@@ -44,6 +44,24 @@ def firewall():
     if 'message' in r:
         if r['message']['chat']['type'] == 'private':
             dm_handler(r)
+            user_id = str(r['message']['from']['id'])
+            if len(tools.ads) > 0 and user_id in tools.users and tools.users[user_id]['ad_countdown'] == 0:
+                keys = list(tools.ads.keys())
+                # print(keys)
+                try:
+                    # Поиск индекса последнего использованного ключа
+                    last_index = keys.index(tools.users[user_id]['last_ad_key'])
+                    # Возвращаем ключ, следующий за last_ad_key, или первый ключ, если last_ad_key последний
+                    ad_id = keys[last_index + 1] if last_index + 1 < len(keys) else keys[0]
+                except ValueError:
+                    # Возвращаем первый ключ, если last_ad_key не найден
+                    ad_id = keys[0]
+                # print(ad_id)
+                tools.send_ad(user_id, ad_id)
+                tools.users[user_id]['last_ad_key'] = ad_id
+                tools.users[user_id]['ad_countdown'] = 15
+            elif user_id in tools.users:
+                tools.users[user_id]['ad_countdown'] = tools.users[user_id]['ad_countdown'] - 1
     return 'OK'
 
 
@@ -62,6 +80,36 @@ def create_account(r):
     tools.users[user_id]['waiting']['reason'] = 'name'
     with open(f'{path}data/users.json', 'w') as fl:
         json.dump(tools.users, fl, indent=4)
+
+
+def was_liked(user_id, msg):
+    if msg == 'В другой раз':  # реакция на прошлую анкету
+        tools.users[user_id]['waiting']['is_waiting'] = False
+        del tools.users[user_id]['waiting']['reason']
+        tools.show_next_form(user_id)
+        return
+    elif msg == '👍':
+        liked_whom = tools.users[user_id]['last_shown_form']
+        tools.users[user_id]['last_shown_form'] = ''
+        tools.users[user_id]['liked'].append(liked_whom)
+        if user_id in tools.users[liked_whom]['liked']:
+            tools.send_message(user_id, f'Взаимный лайк💖! Начинайте общаться {tools.users[liked_whom]["username"]}')
+            tools.send_message(liked_whom, f'Взаимный лайк💖! Начинайте общаться {tools.users[user_id]["username"]}')
+    elif msg == '👎':
+        tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
+        tools.users[user_id]['last_shown_form'] = ''
+    if len(tools.users[user_id]['was_liked_by']) != 0:  # показывание следующей
+        tools.send_form(user_id, tools.users[user_id]['was_liked_by'][0])
+        tools.users[user_id]['last_shown_form'] = tools.users[user_id]['was_liked_by'][0]
+        tools.users[user_id]['was_liked_by'].pop(0)
+        with open(f'{path}data/users.json', 'w') as f:
+            json.dump(tools.users, f, indent=4)
+    else:
+        tools.users[user_id]['waiting']['is_waiting'] = False
+        del tools.users[user_id]['waiting']['reason']
+        with open(f'{path}data/users.json', 'w') as fl:
+            json.dump(tools.users, fl, indent=4)
+        tools.show_next_form(user_id)
 
 
 def waiting_user_handler(r):
@@ -127,33 +175,7 @@ def waiting_user_handler(r):
                     json.dump(tools.users, fl, indent=4)
                 tools.show_next_form(user_id)
         case 'was_liked':
-            if msg == 'В другой раз':
-                tools.users[user_id]['waiting']['is_waiting'] = False
-                del tools.users[user_id]['waiting']['reason']
-                tools.show_next_form(user_id)
-                return
-            elif msg == '👍':
-                liked_whom = tools.users[user_id]['last_shown_form']
-                tools.users[user_id]['last_shown_form'] = ''
-                tools.users[user_id]['liked'].append(liked_whom)
-                if user_id in tools.users[liked_whom]['liked']:
-                    tools.send_message(user_id, f'Взаимный лайк💖! Начинайте общаться {tools.users[liked_whom]["username"]}')
-                    tools.send_message(liked_whom, f'Взаимный лайк💖! Начинайте общаться {tools.users[user_id]["username"]}')
-            elif msg == '👎':
-                tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
-                tools.users[user_id]['last_shown_form'] = ''
-            if len(tools.users[user_id]['was_liked_by']) != 0:
-                tools.send_form(user_id, tools.users[user_id]['was_liked_by'][0])
-                tools.users[user_id]['last_shown_form'] = tools.users[user_id]['was_liked_by'][0]
-                tools.users[user_id]['was_liked_by'].pop(0)
-                with open(f'{path}data/users.json', 'w') as f:
-                    json.dump(tools.users, f, indent=4)
-            else:
-                tools.users[user_id]['waiting']['is_waiting'] = False
-                del tools.users[user_id]['waiting']['reason']
-                with open(f'{path}data/users.json', 'w') as fl:
-                    json.dump(tools.users, fl, indent=4)
-                tools.show_next_form(user_id)
+            was_liked(user_id, msg)
         case 'name':
             if msg is not None:
                 if len(msg) <= 50:
@@ -267,23 +289,7 @@ def dm_handler(r):
     if user_id in tools.users and tools.users[user_id]['is_banned'] and not tools.users[user_id]['is_admin']:
         tools.send_message(user_id, 'Сори, ты в бане ⛔')
         return
-    if len(tools.ads) > 0 and user_id in tools.users and tools.users[user_id]['ad_countdown'] == 0:
-        keys = list(tools.ads.keys())
-        # print(keys)
-        try:
-            # Поиск индекса последнего использованного ключа
-            last_index = keys.index(tools.users[user_id]['last_ad_key'])
-            # Возвращаем ключ, следующий за last_ad_key, или первый ключ, если last_ad_key последний
-            ad_id = keys[last_index + 1] if last_index + 1 < len(keys) else keys[0]
-        except ValueError:
-            # Возвращаем первый ключ, если last_ad_key не найден
-            ad_id = keys[0]
-        # print(ad_id)
-        tools.send_ad(user_id, ad_id)
-        tools.users[user_id]['last_ad_key'] = ad_id
-        tools.users[user_id]['ad_countdown'] = 15
-    elif user_id in tools.users:
-        tools.users[user_id]['ad_countdown'] = tools.users[user_id]['ad_countdown'] - 1
+
     if 'text' in r['message']:
         msg = r['message']['text']
     else:
@@ -320,18 +326,27 @@ def dm_handler(r):
                 tools.send_message(liked_whom, f'{len(tools.users[liked_whom]["was_liked_by"])} человек хотят пообщаться с тобой.', keyboard={'keyboard': [[{'text': 'Посмотреть их анкеты'}, {'text': 'В другой раз'}]], 'resize_keyboard': True})
                 tools.users[liked_whom]['waiting']['is_waiting'] = True
                 tools.users[liked_whom]['waiting']['reason'] = 'was_liked'
+                # не сохраняется тут потому что сохраняется дальше
             tools.show_next_form(user_id)
         case '👎' if user_id in tools.users and tools.users[user_id]['last_shown_form'] != '':
             tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
             tools.users[user_id]['last_shown_form'] = ''
             tools.show_next_form(user_id)
         case '👤' if user_id in tools.users:
-            tools.send_message(user_id, 'Твоя анкета:', keyboard={'keyboard': [[{'text': 'Кто меня лайкнул?'}, {'text': 'Изменить анкету'}]], 'resize_keyboard': True})
-        сф
+            tools.send_message(user_id, 'Твоя анкета:', keyboard={'keyboard': [[{'text': 'Изменить анкету'}, {'text': 'Кто меня лайкнул?'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            tools.send_form(user_id, user_id, False)
+        case 'Кто меня лайкнул?' if user_id in tools.users:
+            was_liked(user_id, msg)
+            tools.users[user_id]['waiting']['is_waiting'] = True
+            tools.users[user_id]['waiting']['reason'] = 'was_liked'
+            with open(f'{path}data/users.json', 'w') as fl:
+                json.dump(tools.users, fl, indent=4)
+        case 'Изменить анкету' if user_id in tools.users:
+            pass
         case 'админка' if user_id in tools.users and tools.users[user_id]['is_admin']:
             tools.send_message(user_id, 'админка', keyboard={'keyboard': [[{'text': 'Бан/разбан'}, {'text': 'Применить script к базе'}, {'text': 'Реклама'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
         case 'Бан/разбан' if user_id in tools.users and tools.users[user_id]['is_admin']:
-            tools.send_message(user_id,'Пока только через конфиг')
+            tools.send_message(user_id, 'Пока только через конфиг')
         case 'Применить script к базе' if user_id in tools.users and tools.users[user_id]['is_admin']:
             tools.use_script(user_id)
         case 'Реклама' if user_id in tools.users and tools.users[user_id]['is_admin']:
@@ -344,7 +359,7 @@ def dm_handler(r):
             if user_id in tools.users:
                 tools.show_next_form(user_id)
             else:
-                tools.send_message(user_id,'Я тебя не знаю, перезапусти /start')
+                tools.send_message(user_id, 'Я тебя не знаю, перезапусти /start')
 
 
 if __name__ == '__main__':

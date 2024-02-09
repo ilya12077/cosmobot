@@ -25,7 +25,7 @@
         },
         "is_admin": false,
         "is_banned": false,
-        "ad_countdown": 14,
+        "ad_countdown": 15,
         "last_ad_key": "1"
     },
     "1787016759": {
@@ -46,7 +46,8 @@
             "647372660"
         ],
         "disliked": [
-            "1787016759"
+            "1787016759",
+            "647372660"
         ],
         "last_shown_form": "",
         "waiting": {
@@ -54,7 +55,34 @@
         },
         "is_admin": false,
         "is_banned": false,
-        "ad_countdown": 5,
+        "ad_countdown": 6,
+        "last_ad_key": "1"
+    },
+    "6413554773": {
+        "first_name": "\u0418\u043b\u044c\u044f",
+        "username": "@ssdfv883f",
+        "form": {
+            "about": "",
+            "name": "\u0418\u043b\u044c\u044f",
+            "town": "\u041c\u043e\u0441\u043a\u0432\u0430",
+            "age": 18,
+            "sex": "male",
+            "searching": "any",
+            "picture": "AgACAgQAAxkBAAIHxmXGORplml9_sNdBkCPv9IS0x6qXAAKRwDEbTNAxUkWFMso9TzAOAQADAgADeQADNAQ",
+            "pic_type": "photo"
+        },
+        "was_liked_by": [],
+        "liked": [],
+        "disliked": [
+            "6413554773"
+        ],
+        "last_shown_form": "",
+        "waiting": {
+            "is_waiting": false
+        },
+        "is_admin": false,
+        "is_banned": false,
+        "ad_countdown": 7,
         "last_ad_key": "0"
     }
 }

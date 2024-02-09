@@ -97,12 +97,16 @@ def send_video(chat_id: int | str, file_id: str, caption: None | str = None, key
     return r
 
 
-def send_form(send_to_user_id: int | str, whos_form_user_id: str) -> None | Response:
+def send_form(send_to_user_id: int | str, whos_form_user_id: str, keyboard: bool = True) -> None | Response:
+    if keyboard:
+        keyboard = {'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True}
+    else:
+        keyboard = None
     caption = str(', '.join([str(users[whos_form_user_id]['form']['name']), str(users[whos_form_user_id]['form']['age']), str(users[whos_form_user_id]['form']['about'])]))
     if users[whos_form_user_id]['form']['pic_type'] == 'video':
-        return send_video(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, {'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True}).json()
+        return send_video(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard).json()
     elif users[whos_form_user_id]['form']['pic_type'] == 'photo':
-        return send_photo(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, {'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
+        return send_photo(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard)
 
 
 def show_next_form(show_to_user_id: int | str) -> None:
@@ -116,7 +120,7 @@ def show_next_form(show_to_user_id: int | str) -> None:
             users[show_to_user_id]['last_shown_form'] = userid
             break
     if not flag:
-        send_message(show_to_user_id, 'К сожалению новые анкеты кончились. Возвращайся позже!', keyboard={"remove_keyboard": True})
+        send_message(show_to_user_id, 'К сожалению новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
     with open(f'{path}data/users.json', 'w') as f:
         json.dump(users, f, indent=4)
 
