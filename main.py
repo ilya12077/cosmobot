@@ -54,7 +54,8 @@ def create_account(r):
         username = '@' + r['message']['from']['username']
     else:
         username = ''
-    tools.users[user_id] = {'first_name': str(first_name), 'username': username, 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '', 'waiting': {'is_waiting': False}, 'is_admin': False}
+    tools.users[user_id] = {'first_name': str(first_name), 'username': username, 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '',
+                            'waiting': {'is_waiting': False}, 'is_admin': False, 'is_banned': False, 'ad_countdown': 15, 'last_ad_key': '0'}
     tools.send_message(user_id, 'Привет! Это бот для поиска друзей👫 или пары💖 на концерты Космонавтов нет.')
     tools.send_message(user_id, 'Давай создадим тебе анкету, она будет видна другим пользователям. Как тебя зовут?', keyboard={'keyboard': [[{'text': first_name}]], 'resize_keyboard': True})
     tools.users[user_id]['waiting']['is_waiting'] = True
@@ -71,6 +72,51 @@ def waiting_user_handler(r):
     user_id = str(r['message']['from']['id'])
     reason = tools.users[user_id]['waiting']['reason']
     match reason:
+        case 'ad':
+            if msg == 'Удалить':
+                tools.send_message(user_id, 'Пришлите id рекламы для удаления')
+                tools.users[user_id]['waiting']['reason'] = 'del_ad'
+                with open(f'{path}data/users.json', 'w') as fl:
+                    json.dump(tools.users, fl, indent=4)
+            elif msg == 'Посмотреть все':
+                for ad_id in tools.ads:
+                    tools.send_message(user_id, f'Айди рекламы: {ad_id}')
+                    tools.send_ad(user_id, ad_id)
+                tools.users[user_id]['waiting']['is_waiting'] = False
+                del tools.users[user_id]['waiting']['reason']
+                with open(f'{path}data/users.json', 'w') as fl:
+                    json.dump(tools.users, fl, indent=4)
+            elif msg == 'Добавить':
+                tools.send_message(user_id, 'Давай')
+                tools.users[user_id]['waiting']['reason'] = 'add_ad'
+                with open(f'{path}data/users.json', 'w') as fl:
+                    json.dump(tools.users, fl, indent=4)
+            elif msg == 'Главное меню':
+                tools.send_message(user_id, 'Меню')
+                tools.users[user_id]['waiting']['is_waiting'] = False
+                del tools.users[user_id]['waiting']['reason']
+                with open(f'{path}data/users.json', 'w') as fl:
+                    json.dump(tools.users, fl, indent=4)
+        case 'del_ad':
+            if msg in tools.ads:
+                ad_id = msg
+                tools.send_ad(user_id, ad_id)
+                del tools.ads[ad_id]
+                with open(f'{path}data/ads.json', 'w') as fl:
+                    json.dump(tools.ads, fl, indent=4)
+                tools.send_message(user_id, "Удалил")
+            tools.users[user_id]['waiting']['is_waiting'] = False
+            del tools.users[user_id]['waiting']['reason']
+            with open(f'{path}data/users.json', 'w') as fl:
+                json.dump(tools.users, fl, indent=4)
+        case 'add_ad':
+            ad_id = tools.add_ad(r)
+            tools.send_message(user_id, f'Айди рекламы: {ad_id}')
+            tools.send_ad(user_id, ad_id)
+            tools.users[user_id]['waiting']['is_waiting'] = False
+            del tools.users[user_id]['waiting']['reason']
+            with open(f'{path}data/users.json', 'w') as fl:
+                json.dump(tools.users, fl, indent=4)
         case 'reset':
             if msg == 'сбросить':
                 create_account(r)
@@ -115,20 +161,20 @@ def waiting_user_handler(r):
                     tools.users[user_id]['waiting']['reason'] = 'town'
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
-                    tools.send_message(user_id, f'{msg}, в каком городе ты хочешь просматривать анкеты?', keyboard={'keyboard': [[{'text': town} for town in tools.towns]], 'resize_keyboard': True, 'one_time_keyboard': True})
+                    tools.send_message(user_id, f'{msg}, в каком городе ты хочешь просматривать анкеты?', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'resize_keyboard': True, 'one_time_keyboard': True})
                 else:
                     tools.send_message(user_id, 'Максимум 50 символов')
             else:
                 tools.send_message(user_id, 'Как тебя зовут?')
         case 'town':
-            if msg in tools.towns:
+            if any(msg in sublist for sublist in tools.towns):
                 tools.users[user_id]['form']['town'] = msg
                 tools.users[user_id]['waiting']['reason'] = 'age'
                 with open(f'{path}data/users.json', 'w') as fl:
                     json.dump(tools.users, fl, indent=4)
                 tools.send_message(user_id, 'Сколько тебе лет?', keyboard={"remove_keyboard": True})
             else:
-                tools.send_message(user_id, 'Выбери город из списка👇', keyboard={'keyboard': [[{'text': town} for town in tools.towns]], 'one_time_keyboard': True, 'resize_keyboard': True})
+                tools.send_message(user_id, 'Выбери город из списка👇', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'one_time_keyboard': True, 'resize_keyboard': True})
         case 'age':
             if msg is not None and msg.isdigit():
                 msg = int(msg)
@@ -195,6 +241,7 @@ def waiting_user_handler(r):
                         json.dump(tools.users, fl, indent=4)
                     tools.send_message(user_id, 'Твоя анкета готова!')
                     tools.send_form(user_id, user_id)
+                    tools.send_message(user_id, 'Помни, что <b>в интернете люди могут выдавать себя не за того, кто они есть на самом деле</b>!')
                     tools.send_message(user_id, 'Давай посмотрим кто тут есть🔍')
                     tools.show_next_form(user_id)
                 else:
@@ -208,6 +255,7 @@ def waiting_user_handler(r):
                     json.dump(tools.users, fl, indent=4)
                 tools.send_message(user_id, 'Твоя анкета готова!')
                 tools.send_form(user_id, user_id)
+                tools.send_message(user_id, 'Помни, что <b>в интернете люди могут выдавать себя не за того, кто они есть на самом деле</b>!')
                 tools.send_message(user_id, 'Давай посмотрим кто тут есть🔍')
                 tools.show_next_form(user_id)
             else:
@@ -216,8 +264,26 @@ def waiting_user_handler(r):
 
 def dm_handler(r):
     user_id = str(r['message']['from']['id'])
-    # tools.send_form(user_id, user_id)
-    # print(tools.send_photo(user_id, tools.users[user_id]['form']['picture']).json())
+    if user_id in tools.users and tools.users[user_id]['is_banned'] and not tools.users[user_id]['is_admin']:
+        tools.send_message(user_id, 'Сори, ты в бане ⛔')
+        return
+    if len(tools.ads) > 0 and user_id in tools.users and tools.users[user_id]['ad_countdown'] == 0:
+        keys = list(tools.ads.keys())
+        # print(keys)
+        try:
+            # Поиск индекса последнего использованного ключа
+            last_index = keys.index(tools.users[user_id]['last_ad_key'])
+            # Возвращаем ключ, следующий за last_ad_key, или первый ключ, если last_ad_key последний
+            ad_id = keys[last_index + 1] if last_index + 1 < len(keys) else keys[0]
+        except ValueError:
+            # Возвращаем первый ключ, если last_ad_key не найден
+            ad_id = keys[0]
+        # print(ad_id)
+        tools.send_ad(user_id, ad_id)
+        tools.users[user_id]['last_ad_key'] = ad_id
+        tools.users[user_id]['ad_countdown'] = 15
+    elif user_id in tools.users:
+        tools.users[user_id]['ad_countdown'] = tools.users[user_id]['ad_countdown'] - 1
     if 'text' in r['message']:
         msg = r['message']['text']
     else:
@@ -229,19 +295,19 @@ def dm_handler(r):
         case '/start':
             if 'username' not in r['message']['from']:
                 tools.send_message(user_id, 'Привет! У тебя не установлен username в телеграме, поэтому при взаимном лайке тебе не смогут написать. Поставь его и обязательно начни заново на /start')
-                tools.users[user_id] = {'first_name': "", 'username': "", 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '', 'waiting': {'is_waiting': False}, 'is_admin': False}
-                with open(f'{path}data/users.json', 'w') as fl:
-                    json.dump(tools.users, fl, indent=4)
+                # tools.users[user_id] = {'first_name': "", 'username': "", 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '', 'waiting': {'is_waiting': False}, 'is_admin': False}
+                # with open(f'{path}data/users.json', 'w') as fl:
+                #     json.dump(tools.users, fl, indent=4)
                 return
             if user_id in tools.users:
-                tools.send_message(user_id, 'Осторожно! Это действие полностью сбросит вашу статистику и анкету. Все лайки, предпочтения, вообще ВСЕ!', keyboard={'keyboard': [[{'text': 'сбросить'}, {'text': 'Я ПЕРЕДУМАЛ'}]], 'resize_keyboard': True})
+                tools.send_message(user_id, 'Осторожно! Это действие полностью сбросит вашу статистику и анкету. Все лайки, предпочтения, вообще ВСЕ!', keyboard={'keyboard': [[{'text': 'сбросить'}, {'text': 'НЕ НАДО'}]], 'resize_keyboard': True})
                 tools.users[user_id]['waiting']['is_waiting'] = True
                 tools.users[user_id]['waiting']['reason'] = 'reset'
                 with open(f'{path}data/users.json', 'w') as fl:
                     json.dump(tools.users, fl, indent=4)
             else:
                 create_account(r)
-        case '👍' if tools.users[user_id]['last_shown_form'] != '':
+        case '👍' if user_id in tools.users and tools.users[user_id]['last_shown_form'] != '':
             liked_whom = tools.users[user_id]['last_shown_form']
             tools.users[user_id]['last_shown_form'] = ''
             tools.users[user_id]['liked'].append(liked_whom)
@@ -255,14 +321,30 @@ def dm_handler(r):
                 tools.users[liked_whom]['waiting']['is_waiting'] = True
                 tools.users[liked_whom]['waiting']['reason'] = 'was_liked'
             tools.show_next_form(user_id)
-        case '👎' if tools.users[user_id]['last_shown_form'] != '':
+        case '👎' if user_id in tools.users and tools.users[user_id]['last_shown_form'] != '':
             tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
             tools.users[user_id]['last_shown_form'] = ''
             tools.show_next_form(user_id)
-        case '💤':
-            pass
+        case '👤' if user_id in tools.users:
+            tools.send_message(user_id, 'Твоя анкета:', keyboard={'keyboard': [[{'text': 'Кто меня лайкнул?'}, {'text': 'Изменить анкету'}]], 'resize_keyboard': True})
+        сф
+        case 'админка' if user_id in tools.users and tools.users[user_id]['is_admin']:
+            tools.send_message(user_id, 'админка', keyboard={'keyboard': [[{'text': 'Бан/разбан'}, {'text': 'Применить script к базе'}, {'text': 'Реклама'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+        case 'Бан/разбан' if user_id in tools.users and tools.users[user_id]['is_admin']:
+            tools.send_message(user_id,'Пока только через конфиг')
+        case 'Применить script к базе' if user_id in tools.users and tools.users[user_id]['is_admin']:
+            tools.use_script(user_id)
+        case 'Реклама' if user_id in tools.users and tools.users[user_id]['is_admin']:
+            tools.users[user_id]['waiting']['is_waiting'] = True
+            tools.users[user_id]['waiting']['reason'] = 'ad'
+            tools.send_message(user_id, 'Реклама', keyboard={'keyboard': [[{'text': 'Удалить'}, {'text': 'Посмотреть все'}, {'text': 'Добавить'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            with open(f'{path}data/users.json', 'w') as fl:
+                json.dump(tools.users, fl, indent=4)
         case _:
-            tools.show_next_form(user_id)
+            if user_id in tools.users:
+                tools.show_next_form(user_id)
+            else:
+                tools.send_message(user_id,'Я тебя не знаю, перезапусти /start')
 
 
 if __name__ == '__main__':
