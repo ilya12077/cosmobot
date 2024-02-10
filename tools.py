@@ -112,10 +112,13 @@ def send_form(send_to_user_id: int | str, whos_form_user_id: str, keyboard: bool
 def show_next_form(show_to_user_id: int | str) -> None:
     flag = False
     for userid in users:
-        if userid not in users[show_to_user_id]['disliked'] and userid not in users[show_to_user_id]['liked'] and show_to_user_id not in users[userid]['disliked'] and \
+        # print(userid, userid not in users[show_to_user_id]['disliked'], userid not in users[show_to_user_id]['liked'], show_to_user_id not in users[userid]['disliked'], (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any'), (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any'),
+        #       users[userid]['form']['town'] == users[show_to_user_id]['form']['town'], not users[show_to_user_id]['is_banned'])
+        if (userid not in users[show_to_user_id]['disliked']) and (userid not in users[show_to_user_id]['liked']) and (show_to_user_id not in users[userid]['disliked']) and \
                 (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
-                and users[userid]['form']['town'] == users[show_to_user_id]['form']['town'] and not users[show_to_user_id]['is_banned']:
-            if users[show_to_user_id]['form']['picture'] != '':
+                and (users[userid]['form']['town'] == users[show_to_user_id]['form']['town']) and not (users[show_to_user_id]['is_banned']):
+            if users[userid]['form']['picture'] != '':
+                # print(users[userid]['form']['picture'])
                 flag = True
                 send_form(show_to_user_id, userid)
                 users[show_to_user_id]['last_shown_form'] = userid

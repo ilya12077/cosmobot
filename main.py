@@ -55,7 +55,7 @@ def firewall():
                 except ValueError:
                     # Возвращаем первый ключ, если last_ad_key не найден
                     ad_id = keys[0]
-                print(ad_id)
+                # print(ad_id)
                 tools.send_ad(user_id, ad_id)
                 tools.users[user_id]['last_ad_key'] = str(ad_id)
                 tools.users[user_id]['ad_countdown'] = 15
