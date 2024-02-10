@@ -115,10 +115,11 @@ def show_next_form(show_to_user_id: int | str) -> None:
         if userid not in users[show_to_user_id]['disliked'] and userid not in users[show_to_user_id]['liked'] and show_to_user_id not in users[userid]['disliked'] and \
                 (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
                 and users[userid]['form']['town'] == users[show_to_user_id]['form']['town'] and not users[show_to_user_id]['is_banned']:
-            flag = True
-            send_form(show_to_user_id, userid)
-            users[show_to_user_id]['last_shown_form'] = userid
-            break
+            if users[show_to_user_id]['form']['picture'] != '':
+                flag = True
+                send_form(show_to_user_id, userid)
+                users[show_to_user_id]['last_shown_form'] = userid
+                break
     if not flag:
         send_message(show_to_user_id, 'К сожалению новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
     with open(f'{path}data/users.json', 'w') as f:
