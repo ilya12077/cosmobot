@@ -370,7 +370,7 @@ def dm_handler(r):
                 tools.users[user_id]['waiting']['reason'] = 'was_liked'
                 was_liked(user_id, msg)
             else:
-                tools.send_message(user_id, 'Пока никто :(')
+                tools.send_message(user_id, 'Пока никто:(')
         case 'Изменить анкету' if user_id in tools.users:
             tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}, {'text': 'Изменить город'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
         case 'Изменить "о себе"' if user_id in tools.users:

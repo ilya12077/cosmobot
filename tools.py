@@ -124,7 +124,7 @@ def show_next_form(show_to_user_id: int | str) -> None:
                 users[show_to_user_id]['last_shown_form'] = userid
                 break
     if not flag:
-        send_message(show_to_user_id, 'К сожалению новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
+        send_message(show_to_user_id, 'К сожалению, новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
     with open(f'{path}data/users.json', 'w') as f:
         json.dump(users, f, indent=4)
 
@@ -169,7 +169,7 @@ def use_script(issued_user_id: str):
             send_message(issued_user_id, f"Произошла ошибка при удалении файла {file_path}: {e}")
 
 
-def send_ad(user_id, ad_id: str, keyboard: dict = None):
+def send_ad(user_id, ad_id: str):
     photo = ads[ad_id]['photo'] if 'photo' in ads[ad_id] else None
     caption = ads[ad_id]['caption'] if 'caption' in ads[ad_id] else None
     if ad_id in ads:
