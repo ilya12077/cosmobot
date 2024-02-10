@@ -26,7 +26,7 @@ with open(f'{path}data/users.json', 'r') as fl:
     users = json.load(fl)
 with open(f'{path}data/ads.json', 'r') as fl:
     ads = json.load(fl)
-towns = [['Москва', 'Новосибирск', 'Екатеринбург', 'Омск'], ['Ростов-на-Дону', 'Челябинск', 'Красноярск', 'Воронеж', 'Краснодар'], ['Владимир', 'Тюмень', 'Ярославль', 'Абакан']]
+towns = [['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Омск'], ['Ростов-на-Дону', 'Челябинск', 'Красноярск', 'Воронеж', 'Краснодар'], ['Владимир', 'Тюмень', 'Ярославль', 'Абакан', 'Новосибирск']]
 
 
 def send_message(chat_id: int | str, message, keyboard: dict = None, spoiler=False, reply_to_message_id: int = None) -> None | Response:
@@ -114,7 +114,7 @@ def show_next_form(show_to_user_id: int | str) -> None:
     for userid in users:
         if userid not in users[show_to_user_id]['disliked'] and userid not in users[show_to_user_id]['liked'] and show_to_user_id not in users[userid]['disliked'] and \
                 (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
-                and users[userid]['form']['town'] == users[show_to_user_id]['form']['town'] and not users[show_to_user_id]['is_banned'] and not users[show_to_user_id]['is_admin']:
+                and users[userid]['form']['town'] == users[show_to_user_id]['form']['town'] and not users[show_to_user_id]['is_banned']:
             flag = True
             send_form(show_to_user_id, userid)
             users[show_to_user_id]['last_shown_form'] = userid
