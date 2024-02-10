@@ -114,7 +114,7 @@ def show_next_form(show_to_user_id: int | str) -> None:
     for userid in users:
         if userid not in users[show_to_user_id]['disliked'] and userid not in users[show_to_user_id]['liked'] and show_to_user_id not in users[userid]['disliked'] and \
                 (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
-                and users[userid]['form']['town'] == users[show_to_user_id]['form']['town']:
+                and users[userid]['form']['town'] == users[show_to_user_id]['form']['town'] and not users[show_to_user_id]['is_banned'] and not users[show_to_user_id]['is_admin']:
             flag = True
             send_form(show_to_user_id, userid)
             users[show_to_user_id]['last_shown_form'] = userid
@@ -166,9 +166,25 @@ def use_script(issued_user_id: str):
 
 
 def send_ad(user_id, ad_id: str, keyboard: dict = None):
+    photo = ads[ad_id]['photo'] if 'photo' in ads[ad_id] else None
+    caption = ads[ad_id]['caption'] if 'caption' in ads[ad_id] else None
     if ad_id in ads:
-        send_message(user_id, f'ad {ad_id}', keyboard)
+        if photo is not None:
+            send_photo(user_id, photo, caption)
+        else:
+            send_message(user_id, caption)
 
 
-def add_ad(r) -> str:
+def add_ad(photo: str | None = None, caption: str | None = None) -> str | None:
+    if any([photo, caption]):
+        for i in range(1, 100):  # можно просто увеличить
+            if str(i) not in ads:
+                ads[str(i)] = {}
+                if caption is not None:
+                    ads[str(i)]['caption'] = caption
+                if photo is not None:
+                    ads[str(i)]['photo'] = photo
+                with open(f'{path}data/ads.json', 'w') as f:
+                    json.dump(ads, f, indent=4)
+                return str(i)
     return None

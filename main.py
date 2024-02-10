@@ -45,9 +45,8 @@ def firewall():
         if r['message']['chat']['type'] == 'private':
             dm_handler(r)
             user_id = str(r['message']['from']['id'])
-            if len(tools.ads) > 0 and user_id in tools.users and tools.users[user_id]['ad_countdown'] == 0:
+            if len(tools.ads) > 0 and user_id in tools.users and tools.users[user_id]['ad_countdown'] <= 0:
                 keys = list(tools.ads.keys())
-                # print(keys)
                 try:
                     # Поиск индекса последнего использованного ключа
                     last_index = keys.index(tools.users[user_id]['last_ad_key'])
@@ -56,12 +55,14 @@ def firewall():
                 except ValueError:
                     # Возвращаем первый ключ, если last_ad_key не найден
                     ad_id = keys[0]
-                # print(ad_id)
+                print(ad_id)
                 tools.send_ad(user_id, ad_id)
-                tools.users[user_id]['last_ad_key'] = ad_id
+                tools.users[user_id]['last_ad_key'] = str(ad_id)
                 tools.users[user_id]['ad_countdown'] = 15
             elif user_id in tools.users:
                 tools.users[user_id]['ad_countdown'] = tools.users[user_id]['ad_countdown'] - 1
+            with open(f'{path}data/users.json', 'w') as fl:
+                json.dump(tools.users, fl, indent=4)
     return 'OK'
 
 
@@ -153,14 +154,29 @@ def waiting_user_handler(r):
                 with open(f'{path}data/ads.json', 'w') as fl:
                     json.dump(tools.ads, fl, indent=4)
                 tools.send_message(user_id, "Удалил")
+            else:
+                tools.send_message(user_id, 'Такой нет')
             tools.users[user_id]['waiting']['is_waiting'] = False
             del tools.users[user_id]['waiting']['reason']
             with open(f'{path}data/users.json', 'w') as fl:
                 json.dump(tools.users, fl, indent=4)
         case 'add_ad':
-            ad_id = tools.add_ad(r)
-            tools.send_message(user_id, f'Айди рекламы: {ad_id}')
-            tools.send_ad(user_id, ad_id)
+            if 'caption' in r['message']:
+                caption = r['message']['caption']
+            elif 'text' in r['message']:
+                caption = r['message']['text']
+            else:
+                caption = None
+            if 'photo' in r['message']:
+                photo = r['message']['photo'][-1]['file_id']
+            else:
+                photo = None
+            ad_id = tools.add_ad(photo, caption)
+            if ad_id is not None:
+                tools.send_message(user_id, f'Айди рекламы: {ad_id}')
+                tools.send_ad(user_id, ad_id)
+            else:
+                tools.send_message(user_id, 'Ошибка')
             tools.users[user_id]['waiting']['is_waiting'] = False
             del tools.users[user_id]['waiting']['reason']
             with open(f'{path}data/users.json', 'w') as fl:
@@ -179,11 +195,11 @@ def waiting_user_handler(r):
         case 'name':
             if msg is not None:
                 if len(msg) <= 50:
-                    tools.users[user_id]['form']['name'] = msg
+                    tools.users[user_id]['form']['name'] = str(msg)
                     tools.users[user_id]['waiting']['reason'] = 'town'
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
-                    tools.send_message(user_id, f'{msg}, в каком городе ты хочешь просматривать анкеты?', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'resize_keyboard': True, 'one_time_keyboard': True})
+                    tools.send_message(user_id, f'{str(msg)}, в каком городе ты хочешь просматривать анкеты?', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'resize_keyboard': True, 'one_time_keyboard': True})
                 else:
                     tools.send_message(user_id, 'Максимум 50 символов')
             else:
@@ -191,10 +207,16 @@ def waiting_user_handler(r):
         case 'town':
             if any(msg in sublist for sublist in tools.towns):
                 tools.users[user_id]['form']['town'] = msg
-                tools.users[user_id]['waiting']['reason'] = 'age'
+                if tools.users[user_id]['form']['age'] == 0:  # если начальная анкета, а не изменение города
+                    tools.users[user_id]['waiting']['reason'] = 'age'
+                    tools.send_message(user_id, 'Сколько тебе лет?', keyboard={"remove_keyboard": True})
+                else:
+                    tools.send_message(user_id, 'Готово', keyboard={"remove_keyboard": True})
+                    tools.users[user_id]['waiting']['is_waiting'] = False
+                    del tools.users[user_id]['waiting']['reason']
+                    tools.show_next_form(user_id)
                 with open(f'{path}data/users.json', 'w') as fl:
                     json.dump(tools.users, fl, indent=4)
-                tools.send_message(user_id, 'Сколько тебе лет?', keyboard={"remove_keyboard": True})
             else:
                 tools.send_message(user_id, 'Выбери город из списка👇', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'one_time_keyboard': True, 'resize_keyboard': True})
         case 'age':
@@ -240,18 +262,29 @@ def waiting_user_handler(r):
             if msg is not None and msg != 'Пропустить':
                 if len(msg) <= 500:
                     tools.users[user_id]['form']['about'] = msg
-                    tools.users[user_id]['waiting']['reason'] = 'picture'
+                    if tools.users[user_id]['form']['picture'] == '':  # если начальная анкета, а не изменение about
+                        tools.users[user_id]['waiting']['reason'] = 'picture'
+                        tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
+                    else:
+                        tools.send_message(user_id, 'Готово', keyboard={"remove_keyboard": True})
+                        tools.users[user_id]['waiting']['is_waiting'] = False
+                        del tools.users[user_id]['waiting']['reason']
+                        tools.show_next_form(user_id)
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
-                    tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
                 else:
                     tools.send_message(user_id, 'Ого, ты очень разноплановая личность. Но для анкеты нужно что-то покороче, максимум 500 символов', keyboard={'keyboard': [[{'text': 'Пропустить'}]], 'one_time_keyboard': True, 'resize_keyboard': True})
             else:
-                tools.users[user_id]['waiting']['reason'] = 'picture'
+                tools.send_message(user_id, 'Пока пропустим этот вопрос.')  # about уже пустой при создании
+                if tools.users[user_id]['form']['picture'] == '':  # если начальная анкета, а не изменение about
+                    tools.users[user_id]['waiting']['reason'] = 'picture'
+                    tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
+                else:
+                    tools.users[user_id]['waiting']['is_waiting'] = False
+                    del tools.users[user_id]['waiting']['reason']
+                    tools.show_next_form(user_id)
                 with open(f'{path}data/users.json', 'w') as fl:
                     json.dump(tools.users, fl, indent=4)
-                tools.send_message(user_id, 'Пока пропустим этот вопрос.')  # about уже пустой при создании
-                tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
         case 'picture':
             if 'video' in r['message']:
                 if int(r['message']['video']['duration']) <= 15:
@@ -289,7 +322,6 @@ def dm_handler(r):
     if user_id in tools.users and tools.users[user_id]['is_banned'] and not tools.users[user_id]['is_admin']:
         tools.send_message(user_id, 'Сори, ты в бане ⛔')
         return
-
     if 'text' in r['message']:
         msg = r['message']['text']
     else:
@@ -301,9 +333,6 @@ def dm_handler(r):
         case '/start':
             if 'username' not in r['message']['from']:
                 tools.send_message(user_id, 'Привет! У тебя не установлен username в телеграме, поэтому при взаимном лайке тебе не смогут написать. Поставь его и обязательно начни заново на /start')
-                # tools.users[user_id] = {'first_name': "", 'username': "", 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '', 'waiting': {'is_waiting': False}, 'is_admin': False}
-                # with open(f'{path}data/users.json', 'w') as fl:
-                #     json.dump(tools.users, fl, indent=4)
                 return
             if user_id in tools.users:
                 tools.send_message(user_id, 'Осторожно! Это действие полностью сбросит вашу статистику и анкету. Все лайки, предпочтения, вообще ВСЕ!', keyboard={'keyboard': [[{'text': 'сбросить'}, {'text': 'НЕ НАДО'}]], 'resize_keyboard': True})
@@ -336,23 +365,44 @@ def dm_handler(r):
             tools.send_message(user_id, 'Твоя анкета:', keyboard={'keyboard': [[{'text': 'Изменить анкету'}, {'text': 'Кто меня лайкнул?'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
             tools.send_form(user_id, user_id, False)
         case 'Кто меня лайкнул?' if user_id in tools.users:
-            was_liked(user_id, msg)
+            if len(tools.users[user_id]['was_liked_by']) > 0:
+                tools.users[user_id]['waiting']['is_waiting'] = True
+                tools.users[user_id]['waiting']['reason'] = 'was_liked'
+                was_liked(user_id, msg)
+            else:
+                tools.send_message(user_id, 'Пока никто :(')
+        case 'Изменить анкету' if user_id in tools.users:
+            tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}, {'text': 'Изменить город'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+        case 'Изменить "о себе"' if user_id in tools.users:
             tools.users[user_id]['waiting']['is_waiting'] = True
-            tools.users[user_id]['waiting']['reason'] = 'was_liked'
+            tools.users[user_id]['waiting']['reason'] = 'about'
+            with open(f'{path}data/users.json', 'w') as f:
+                json.dump(tools.users, f, indent=4)
+            tools.send_message(user_id, 'Расскажи что-нибудь о себе. Это будет отображаться с твоей анкетой.', keyboard={'keyboard': [[{'text': 'Пропустить'}]], 'one_time_keyboard': True, 'resize_keyboard': True})
+        case 'Изменить фото' if user_id in tools.users:
+            tools.users[user_id]['waiting']['is_waiting'] = True
+            tools.users[user_id]['waiting']['reason'] = 'picture'
+            tools.send_message(user_id, 'Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
+            with open(f'{path}data/users.json', 'w') as f:
+                json.dump(tools.users, f, indent=4)
+        case 'Изменить город' if user_id in tools.users:
+            tools.users[user_id]['waiting']['is_waiting'] = True
+            tools.users[user_id]['waiting']['reason'] = 'town'
             with open(f'{path}data/users.json', 'w') as fl:
                 json.dump(tools.users, fl, indent=4)
-        case 'Изменить анкету' if user_id in tools.users:
-            pass
+            tools.send_message(user_id, f'В каком городе ты хочешь просматривать анкеты?', keyboard={'keyboard': [[{'text': town} for town in inner_list] for inner_list in tools.towns], 'resize_keyboard': True, 'one_time_keyboard': True})
         case 'админка' if user_id in tools.users and tools.users[user_id]['is_admin']:
-            tools.send_message(user_id, 'админка', keyboard={'keyboard': [[{'text': 'Бан/разбан'}, {'text': 'Применить script к базе'}, {'text': 'Реклама'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            tools.send_message(user_id, 'админка', keyboard={'keyboard': [[{'text': 'Бан/разбан'}, {'text': 'Применить script'}, {'text': 'Реклама'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True, 'one_time_keyboard': True})
         case 'Бан/разбан' if user_id in tools.users and tools.users[user_id]['is_admin']:
             tools.send_message(user_id, 'Пока только через конфиг')
         case 'Применить script к базе' if user_id in tools.users and tools.users[user_id]['is_admin']:
             tools.use_script(user_id)
+        case 'Применить script' if user_id in tools.users and tools.users[user_id]['is_admin']:
+            tools.send_message(user_id, 'Напиши Применить sсript к базе')
         case 'Реклама' if user_id in tools.users and tools.users[user_id]['is_admin']:
             tools.users[user_id]['waiting']['is_waiting'] = True
             tools.users[user_id]['waiting']['reason'] = 'ad'
-            tools.send_message(user_id, 'Реклама', keyboard={'keyboard': [[{'text': 'Удалить'}, {'text': 'Посмотреть все'}, {'text': 'Добавить'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            tools.send_message(user_id, 'Реклама', keyboard={'keyboard': [[{'text': 'Удалить'}, {'text': 'Посмотреть все'}, {'text': 'Добавить'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True, 'one_time_keyboard': True})
             with open(f'{path}data/users.json', 'w') as fl:
                 json.dump(tools.users, fl, indent=4)
         case _:
@@ -367,4 +417,4 @@ if __name__ == '__main__':
         serve(app, host='0.0.0.0', port=8881, url_scheme='http')
     else:
         app.run(host='192.168.1.10', port=8886)
-        # app.run(host='192.168.1.21', port=8881)
+        # serve(app, host='192.168.1.10', port=8886, url_scheme='http')
