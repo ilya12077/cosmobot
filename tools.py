@@ -10,7 +10,7 @@ from script import script
 
 load_dotenv(find_dotenv())
 url = os.environ.get('URL')
-
+ad_countdown = 50
 if os.environ.get('AM_I_IN_A_DOCKER_CONTAINER', False):
     path = '/etc/cosmobot/'
 else:
@@ -97,36 +97,41 @@ def send_video(chat_id: int | str, file_id: str, caption: None | str = None, key
     return r
 
 
-def send_form(send_to_user_id: int | str, whos_form_user_id: str, keyboard: bool = True) -> None | Response:
-    if keyboard:
-        keyboard = {'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True}
-    else:
-        keyboard = None
-    caption = str(', '.join([str(users[whos_form_user_id]['form']['name']), str(users[whos_form_user_id]['form']['age']), str(users[whos_form_user_id]['form']['about'])]))
-    if users[whos_form_user_id]['form']['pic_type'] == 'video':
-        return send_video(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard).json()
-    elif users[whos_form_user_id]['form']['pic_type'] == 'photo':
-        return send_photo(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard)
+def send_form(send_to_user_id: int | str, whos_form_user_id: str, keyboard: bool = True, is_was_liked: bool = False) -> None | Response:
+    if 'is_active' in users[send_to_user_id] and users[send_to_user_id]['is_active']:
+        if keyboard:
+            if is_was_liked:
+                keyboard = {'keyboard': [[{'text': '👍'}, {'text': '👎'}]], 'resize_keyboard': True}
+            else:
+                keyboard = {'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True}
+        else:
+            keyboard = None
+        caption = str(', '.join([str(users[whos_form_user_id]['form']['name']), str(users[whos_form_user_id]['form']['age']), str(users[whos_form_user_id]['form']['about'])]))
+        if users[whos_form_user_id]['form']['pic_type'] == 'video':
+            return send_video(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard).json()
+        elif users[whos_form_user_id]['form']['pic_type'] == 'photo':
+            return send_photo(send_to_user_id, users[whos_form_user_id]['form']['picture'], caption, keyboard)
 
 
 def show_next_form(show_to_user_id: int | str) -> None:
     flag = False
-    for userid in users:
-        # print(userid, userid not in users[show_to_user_id]['disliked'], userid not in users[show_to_user_id]['liked'], show_to_user_id not in users[userid]['disliked'], (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any'), (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any'),
-        #       users[userid]['form']['town'] == users[show_to_user_id]['form']['town'], not users[show_to_user_id]['is_banned'])
-        if (userid not in users[show_to_user_id]['disliked']) and (userid not in users[show_to_user_id]['liked']) and (show_to_user_id not in users[userid]['disliked']) and \
-                (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
-                and (users[userid]['form']['town'] == users[show_to_user_id]['form']['town']) and not (users[show_to_user_id]['is_banned']):
-            if users[userid]['form']['picture'] != '':
-                # print(users[userid]['form']['picture'])
-                flag = True
-                send_form(show_to_user_id, userid)
-                users[show_to_user_id]['last_shown_form'] = userid
-                break
-    if not flag:
-        send_message(show_to_user_id, 'К сожалению, новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
-    with open(f'{path}data/users.json', 'w') as f:
-        json.dump(users, f, indent=4)
+    if 'is_active' in users[show_to_user_id] and users[show_to_user_id]['is_active']:
+        for userid in users:
+            # print(userid, userid not in users[show_to_user_id]['disliked'], userid not in users[show_to_user_id]['liked'], show_to_user_id not in users[userid]['disliked'], (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any'), (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any'),
+            #       users[userid]['form']['town'] == users[show_to_user_id]['form']['town'], not users[show_to_user_id]['is_banned'])
+            if (userid not in users[show_to_user_id]['disliked']) and (userid not in users[show_to_user_id]['liked']) and (show_to_user_id not in users[userid]['disliked']) and \
+                    (users[userid]['form']['searching'] == users[show_to_user_id]['form']['sex'] or users[userid]['form']['searching'] == 'any') and (users[show_to_user_id]['form']['searching'] == users[userid]['form']['sex'] or users[show_to_user_id]['form']['searching'] == 'any') \
+                    and (users[userid]['form']['town'] == users[show_to_user_id]['form']['town']) and not (users[show_to_user_id]['is_banned']) and ('is_active' in users[userid] and users[userid]['is_active']):
+                if users[userid]['form']['picture'] != '':
+                    # print(users[userid]['form']['picture'])
+                    flag = True
+                    send_form(show_to_user_id, userid)
+                    users[show_to_user_id]['last_shown_form'] = userid
+                    break
+        if not flag:
+            send_message(show_to_user_id, 'К сожалению, новые анкеты кончились. Возвращайся позже!', keyboard={'keyboard': [[{'text': '👍'}, {'text': '👎'}, {'text': '👤'}]], 'resize_keyboard': True})
+        with open(f'{path}data/users.json', 'w') as f:
+            json.dump(users, f, indent=4)
 
 
 def use_script(issued_user_id: str):
