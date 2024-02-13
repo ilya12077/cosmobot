@@ -75,7 +75,7 @@ def create_account(r):
         username = ''
     tools.users[user_id] = {'first_name': str(first_name), 'username': username, 'form': {'about': '', 'name': '', 'town': '', 'age': 0, 'sex': '', 'searching': '', 'picture': '', 'pic_type': ''}, 'was_liked_by': [], 'liked': [], 'disliked': [user_id], 'last_shown_form': '',
                             'waiting': {'is_waiting': False}, 'is_admin': False, 'is_banned': False, 'is_active': True, 'ad_countdown': tools.ad_countdown, 'last_ad_key': '0'}
-    tools.send_message(user_id, 'Привет! Это бот для поиска друзей👫 или пары💖 на концерты Космонавтов нет.')
+    tools.send_message(user_id, 'Привет! Это бот для поиска друзей👫 и компании на концерты Космонавтов нет.')
     tools.send_message(user_id, 'Давай создадим тебе анкету, она будет видна другим пользователям. Как тебя зовут?', keyboard={'keyboard': [[{'text': first_name}]], 'resize_keyboard': True})
     tools.users[user_id]['waiting']['is_waiting'] = True
     tools.users[user_id]['waiting']['reason'] = 'name'
@@ -297,7 +297,7 @@ def waiting_user_handler(r):
                     tools.users[user_id]['form']['about'] = msg
                     if tools.users[user_id]['form']['picture'] == '':  # если начальная анкета, а не изменение about
                         tools.users[user_id]['waiting']['reason'] = 'picture'
-                        tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
+                        tools.send_message(user_id, 'Последний шаг❗ Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
                     else:
                         tools.send_message(user_id, 'Готово', keyboard={"remove_keyboard": True})
                         tools.users[user_id]['waiting']['is_waiting'] = False
@@ -311,7 +311,7 @@ def waiting_user_handler(r):
                 tools.send_message(user_id, 'Пока пропустим этот вопрос.')  # about уже пустой при создании
                 if tools.users[user_id]['form']['picture'] == '':  # если начальная анкета, а не изменение about
                     tools.users[user_id]['waiting']['reason'] = 'picture'
-                    tools.send_message(user_id, 'Последний шаг❗. Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
+                    tools.send_message(user_id, 'Последний шаг❗ Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
                 else:
                     tools.users[user_id]['waiting']['is_waiting'] = False
                     del tools.users[user_id]['waiting']['reason']
