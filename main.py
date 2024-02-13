@@ -92,14 +92,14 @@ def was_liked(user_id, msg):
         del tools.users[user_id]['waiting']['reason']
         tools.show_next_form(user_id)
         return
-    elif msg == '👍':
+    elif msg == '👍' and tools.users[user_id]['last_shown_form'] != '':
         liked_whom = tools.users[user_id]['last_shown_form']
         tools.users[user_id]['last_shown_form'] = ''
         tools.users[user_id]['liked'].append(liked_whom)
         if user_id in tools.users[liked_whom]['liked'] and 'is_active' in tools.users[liked_whom] and tools.users[liked_whom]['is_active']:
             tools.send_message(user_id, f'Взаимный лайк💖! Начинайте общаться {tools.users[liked_whom]["username"]}')
             tools.send_message(liked_whom, f'Взаимный лайк💖! Начинайте общаться {tools.users[user_id]["username"]}')
-    elif msg == '👎':
+    elif msg == '👎' and tools.users[user_id]['last_shown_form'] != '':
         tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
         tools.users[user_id]['last_shown_form'] = ''
     if len(tools.users[user_id]['was_liked_by']) != 0:  # показывание следующей
