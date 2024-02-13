@@ -26,7 +26,7 @@ with open(f'{path}data/users.json', 'r') as fl:
     users = json.load(fl)
 with open(f'{path}data/ads.json', 'r') as fl:
     ads = json.load(fl)
-towns = [['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Омск'], ['Ростов-на-Дону', 'Челябинск', 'Красноярск', 'Воронеж', 'Краснодар'], ['Владимир', 'Тюмень', 'Ярославль', 'Абакан', 'Новосибирск']]
+towns = [['Все города'], ['Москва', 'Санкт-Петербург', 'Екатеринбург', 'Омск'], ['Ростов-на-Дону', 'Челябинск', 'Красноярск', 'Воронеж', 'Краснодар'], ['Владимир', 'Тюмень', 'Ярославль', 'Абакан', 'Новосибирск']]
 
 
 def send_message(chat_id: int | str, message, keyboard: dict = None, spoiler=False, reply_to_message_id: int = None) -> None | Response:
