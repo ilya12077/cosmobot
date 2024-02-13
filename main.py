@@ -38,7 +38,7 @@ def firewall():
             response = requests.get(f'{tools.url}getWebhookInfo')
             if response.status_code == 200:
                 pendingupdates_count = response.json().get("result", {}).get("pending_update_count", 0)
-                if pendingupdates_count > 25:
+                if pendingupdates_count > 15:
                     if current_time - pendingupdates_lastsent > 60 * 5:  # 3600 секунд = 1 час
                         tools.send_message(647372660, f'⭕Я заметил, что pending updates сейчас: <b>{pendingupdates_count}</b>\n{tools.url}getWebhookInfo')
                         pendingupdates_lastsent = current_time
@@ -103,8 +103,8 @@ def was_liked(user_id, msg):
         tools.users[user_id]['disliked'].append(tools.users[user_id]['last_shown_form'])
         tools.users[user_id]['last_shown_form'] = ''
     if len(tools.users[user_id]['was_liked_by']) != 0:  # показывание следующей
-        tools.send_form(user_id, tools.users[user_id]['was_liked_by'][0], is_was_liked=True)
         tools.users[user_id]['last_shown_form'] = tools.users[user_id]['was_liked_by'][0]
+        tools.send_form(user_id, tools.users[user_id]['was_liked_by'][0], is_was_liked=True)
         tools.users[user_id]['was_liked_by'].pop(0)
         with open(f'{path}data/users.json', 'w') as f:
             json.dump(tools.users, f, indent=4)
