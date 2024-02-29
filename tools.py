@@ -52,9 +52,15 @@ def send_message(chat_id: int | str, message, keyboard: dict = None, spoiler=Fal
     try:
         r = requests.post(url + 'sendMessage', json=send_body)
         # print(r.content)
+        if r.status_code == 400:
+            send_body['text'] = html.escape(message)
+            r = requests.post(url + 'sendMessage', json=send_body)
     except requests.exceptions.ConnectTimeout:
         r = requests.post(url + 'sendMessage', json=send_body)
         # print(r.content)
+        if r.status_code == 400:
+            send_body['text'] = html.escape(message)
+            r = requests.post(url + 'sendMessage', json=send_body)
     return r
 
 
