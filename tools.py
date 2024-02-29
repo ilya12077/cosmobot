@@ -31,7 +31,6 @@ towns = [['Все города'], ['Москва', 'Санкт-Петербур�
 
 def send_message(chat_id: int | str, message, keyboard: dict = None, spoiler=False, reply_to_message_id: int = None) -> None | Response:
     # print(switch_safe_mode, switch_authorize_all, switch_entire_authorization, switch_message_deletion)
-    message = html.escape(message)
     if spoiler:
         message = f'<tg-spoiler>{message}</tg-spoiler>'
     if keyboard is None:
