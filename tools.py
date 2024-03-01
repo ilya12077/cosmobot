@@ -70,7 +70,7 @@ def send_photo(chat_id: int | str, file_id: str, caption: None | str = None, key
         'parse_mode': 'HTML'
     }
     if caption is not None:
-        send_body['caption'] = html.escape(caption)
+        send_body['caption'] = caption
     if keyboard is not None:
         send_body['reply_markup'] = keyboard
     try:
@@ -87,7 +87,7 @@ def send_video(chat_id: int | str, file_id: str, caption: None | str = None, key
         'parse_mode': 'HTML'
     }
     if caption is not None:
-        send_body['caption'] = html.escape(caption)
+        send_body['caption'] = caption
     if keyboard is not None:
         send_body['reply_markup'] = keyboard
     try:

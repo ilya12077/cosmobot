@@ -1,3 +1,4 @@
+import html
 import json
 import os
 import time
@@ -231,7 +232,7 @@ def waiting_user_handler(r):
         case 'name':
             if msg is not None:
                 if len(msg) <= 50:
-                    tools.users[user_id]['form']['name'] = str(msg)
+                    tools.users[user_id]['form']['name'] = str(html.escape(msg))
                     tools.users[user_id]['waiting']['reason'] = 'town'
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
@@ -297,7 +298,7 @@ def waiting_user_handler(r):
         case 'about':
             if msg is not None and msg != 'Пропустить':
                 if len(msg) <= 500:
-                    tools.users[user_id]['form']['about'] = msg
+                    tools.users[user_id]['form']['about'] = html.escape(msg)
                     if tools.users[user_id]['form']['picture'] == '':  # если начальная анкета, а не изменение about
                         tools.users[user_id]['waiting']['reason'] = 'picture'
                         tools.send_message(user_id, 'Последний шаг❗ Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={"remove_keyboard": True})
