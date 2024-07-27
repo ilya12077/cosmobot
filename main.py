@@ -350,7 +350,7 @@ def dm_handler(r):
     if user_id in tools.users and tools.users[user_id]['waiting']['is_waiting']:
         waiting_user_handler(r)
         return
-    if 'username' in r['message']['from'] and ('@' + r['message']['from']['username'] != tools.users[user_id]['username']) and tools.users[user_id]['is_admin']:
+    if 'username' in r['message']['from'] and ('@' + r['message']['from']['username'] != tools.users[user_id]['username']): #обновили юзернейм
         tools.users[user_id]['username'] = '@' + r['message']['from']['username']
         tools.send_message(user_id, 'Ваш юзернейм был обновлен')
         with open(f'{path}data/users.json', 'w') as fl:
