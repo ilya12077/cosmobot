@@ -264,7 +264,20 @@ def waiting_user_handler(r):
                     tools.users[user_id]['waiting']['reason'] = 'sex'
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
-                    tools.send_message(user_id, 'Укажи свой пол👇', keyboard={'keyboard': [[{'text': 'Я парень'}, {'text': 'Я девушка'}]], 'resize_keyboard': True})
+                else:
+                    tools.send_message(user_id, 'Возраст 14+')
+            else:
+                tools.send_message(user_id, 'Только цифры. Сколько тебе лет?')
+        case 'udp_age':
+            if msg is not None and msg.isdigit():
+                msg = int(msg)
+                if 14 <= msg <= 100:
+                    tools.users[user_id]['form']['age'] = msg
+                    tools.users[user_id]['waiting']['is_waiting'] = False
+                    del tools.users[user_id]['waiting']['reason']
+                    with open(f'{path}data/users.json', 'w') as fl:
+                        json.dump(tools.users, fl, indent=4)
+                    tools.send_message(user_id, 'Готово')
                 else:
                     tools.send_message(user_id, 'Возраст 14+')
             else:
@@ -414,7 +427,7 @@ def dm_handler(r):
             else:
                 tools.send_message(user_id, 'Пока никто:(')
         case 'Изменить анкету' if user_id in tools.users:
-            tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}, {'text': 'Изменить город'}, {'text': 'Отключить анкету'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}, {'text': 'Обновить возраст'}, {'text': 'Изменить город'}, {'text': 'Отключить анкету'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
         case 'Изменить "о себе"' if user_id in tools.users:
             tools.users[user_id]['waiting']['is_waiting'] = True
             tools.users[user_id]['waiting']['reason'] = 'about'
@@ -425,6 +438,12 @@ def dm_handler(r):
             tools.users[user_id]['waiting']['is_waiting'] = True
             tools.users[user_id]['waiting']['reason'] = 'change_picture'
             tools.send_message(user_id, 'Пришли свое фото или небольшое видео🎥 (до 15 сек.)', keyboard={'keyboard': [[{'text': 'Отменить'}]], 'resize_keyboard': True})
+            with open(f'{path}data/users.json', 'w') as f:
+                json.dump(tools.users, f, indent=4)
+        case 'Обновить возраст' if user_id in tools.users:
+            tools.users[user_id]['waiting']['is_waiting'] = True
+            tools.users[user_id]['waiting']['reason'] = 'upd_age'
+            tools.send_message(user_id, 'Сколько тебе лет?', keyboard={"remove_keyboard": True})
             with open(f'{path}data/users.json', 'w') as f:
                 json.dump(tools.users, f, indent=4)
         case 'Изменить город' if user_id in tools.users:
