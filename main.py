@@ -268,7 +268,7 @@ def waiting_user_handler(r):
                     tools.send_message(user_id, 'Возраст 14+')
             else:
                 tools.send_message(user_id, 'Только цифры. Сколько тебе лет?')
-        case 'udp_age':
+        case 'upd_age':
             if msg is not None and msg.isdigit():
                 msg = int(msg)
                 if 14 <= msg <= 100:
@@ -427,7 +427,7 @@ def dm_handler(r):
             else:
                 tools.send_message(user_id, 'Пока никто:(')
         case 'Изменить анкету' if user_id in tools.users:
-            tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}, {'text': 'Обновить возраст'}, {'text': 'Изменить город'}, {'text': 'Отключить анкету'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
+            tools.send_message(user_id, 'Что вы хотите изменить?', keyboard={'keyboard': [[{'text': 'Изменить "о себе"'}, {'text': 'Изменить фото'}], [{'text': 'Обновить возраст'}, {'text': 'Изменить город'}, {'text': 'Отключить анкету'}], [{'text': 'Главное меню'}]], 'resize_keyboard': True})
         case 'Изменить "о себе"' if user_id in tools.users:
             tools.users[user_id]['waiting']['is_waiting'] = True
             tools.users[user_id]['waiting']['reason'] = 'about'
