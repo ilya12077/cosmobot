@@ -278,6 +278,7 @@ def waiting_user_handler(r):
                     with open(f'{path}data/users.json', 'w') as fl:
                         json.dump(tools.users, fl, indent=4)
                     tools.send_message(user_id, 'Готово')
+                    tools.show_next_form(user_id)
                 else:
                     tools.send_message(user_id, 'Возраст 14+')
             else:
